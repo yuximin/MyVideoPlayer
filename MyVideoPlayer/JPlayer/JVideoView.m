@@ -8,7 +8,7 @@
 #import "JVideoView.h"
 #import "JProgressView.h"
 
-@interface JVideoView ()
+@interface JVideoView () <JProgressViewDelegate>
 
 @property (nonatomic, strong) AVPlayerItem *jPlayerItem;
 @property (nonatomic, strong) AVPlayer *jPlayer;
@@ -118,6 +118,7 @@
     point = progressView.center;
     point.y = playBtn.center.y;
     progressView.center = point;
+    progressView.delegate = self;
     [controllerView addSubview:progressView];
     self.progressView = progressView;
 }
@@ -200,6 +201,27 @@
     [self.jPlayer seekToTime:CMTimeMake(0, 1) completionHandler:^(BOOL finished) {
         [weakSelf.jPlayer play];
     }];
+}
+
+#pragma mark - JProgressViewDelegate
+
+/// 进度按钮开始滑动
+- (void)onSlideBegin {
+    [self.jPlayer pause];
+}
+
+/// 进度按钮结束滑动
+- (void)onSlideEnd {
+    [self.jPlayer play];
+}
+
+/// 进度按钮滑动
+/// @param value 当前滑动位置对应进度百分比
+- (void)onSlideDraging:(float)value {
+    Float64 totalTime = CMTimeGetSeconds(self.jPlayerItem.duration);
+    Float64 currentTime = totalTime * value;
+    CMTime time = CMTimeMakeWithSeconds(currentTime, 1);
+    [self.jPlayer seekToTime:time];
 }
 
 #pragma mark - Private

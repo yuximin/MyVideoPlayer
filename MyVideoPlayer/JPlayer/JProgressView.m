@@ -21,6 +21,9 @@
 /// 滑动按钮
 @property (nonatomic, strong) UIButton *sliderBtn;
 
+/// 记录滑动按钮上次中心点位置
+@property (nonatomic, assign) CGPoint lastSliderCenter;
+
 @end
 
 @implementation JProgressView
@@ -71,6 +74,14 @@
         button;
     });
     [self addSubview:self.sliderBtn];
+    
+    self.lastSliderCenter = self.sliderBtn.center;
+    
+    [self.sliderBtn addTarget:self action:@selector(onSlideBegin) forControlEvents:UIControlEventTouchDown];
+    [self.sliderBtn addTarget:self action:@selector(onSlideEnd) forControlEvents:UIControlEventTouchCancel];
+    [self.sliderBtn addTarget:self action:@selector(onSlideEnd) forControlEvents:UIControlEventTouchUpOutside];
+    [self.sliderBtn addTarget:self action:@selector(onSlideEnd) forControlEvents:UIControlEventTouchUpInside];
+    [self.sliderBtn addTarget:self action:@selector(onSliderDraging:withEvent:) forControlEvents:UIControlEventTouchDragInside];
 }
 
 #pragma mark - Public
@@ -93,6 +104,42 @@
     CGRect frame = self.bufferProgressView.frame;
     frame.size.width = (self.frame.size.width - self.frame.size.height) * value;
     self.bufferProgressView.frame = frame;
+}
+
+#pragma mark - 进度条滑动处理
+
+/// 开始滑动
+- (void)onSlideBegin {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(onSlideBegin)]) {
+        [self.delegate onSlideBegin];
+    }
+}
+
+/// 停止滑动
+- (void)onSlideEnd {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(onSlideEnd)]) {
+        [self.delegate onSlideEnd];
+    }
+}
+
+/// 正在滑动
+- (void)onSliderDraging:(UIButton *)sender withEvent:(UIEvent *)event {
+    //  获取当前触屏位置相对于 self 原点的坐标
+    CGPoint point = [[event.allTouches anyObject] locationInView:self.bgView];
+    CGFloat x;
+    if (point.x < 0) {
+        x = 0;
+    } else if (point.x > self.bgView.frame.size.width) {
+        x = self.bgView.frame.size.width;
+    } else {
+        x = point.x;
+    }
+    
+    float progressValue = x / self.bgView.frame.size.width;
+    [self setProgress:progressValue];
+    if (self.delegate && [self.delegate respondsToSelector:@selector(onSlideEnd)]) {
+        [self.delegate onSlideDraging:progressValue];
+    }
 }
 
 @end
